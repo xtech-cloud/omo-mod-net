@@ -21,6 +21,7 @@ func RunPublisher(_name string, _proc string) {
 	publisher := &_Publisher{}
 	publisher.socket = socket
 	publisher.socket.Bind(_proc)
+	publisher.msgChan = make(chan string)
 	publishers[_name] = publisher
 
 	for {
@@ -33,8 +34,7 @@ func RunPublisher(_name string, _proc string) {
 }
 
 func Publish(_name string, _msg string) {
-	if _, ok := publishers[_name]; !ok {
-		return
+	if publisher, ok := publishers[_name]; !ok {
+		publisher.msgChan <- _msg
 	}
-	publishers[_name].msgChan <- _msg
 }
