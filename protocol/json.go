@@ -39,3 +39,7 @@ type Notify struct {
 func ToJSON(_data interface{}) ([]byte, error) {
 	return json.Marshal(_data)
 }
+
+func FromJSON(_data []byte, _target interface{}) error {
+	return json.Unmarshal(_data, _target)
+}
