@@ -11,8 +11,6 @@ var jsonHandlers = make(map[string]func(*protocol.Request, *protocol.Response), 
 func ProcessJson(_bytes []byte) ([]byte, error) {
 	req := &protocol.Request{}
 	rsp := &protocol.Response{}
-	rsp.Head.Msg = req.Head.Msg
-	rsp.Head.Session = req.Head.Session
 
 	err := json.Unmarshal(_bytes, req)
 	if nil != err {
@@ -22,15 +20,15 @@ func ProcessJson(_bytes []byte) ([]byte, error) {
 		return jsonToBytes(rsp)
 	}
 
+	rsp.Head.Msg = req.Head.Msg
+	rsp.Head.Session = req.Head.Session
+
 	if _, ok := jsonHandlers[req.Head.Msg]; !ok {
 		rsp.Head.ErrCode = -1
 		rsp.Head.ErrString = "handler not found"
 		rsp.Body = &protocol.EmptyBlock{}
 		return jsonToBytes(rsp)
 	}
-
-	rsp.Head.Msg = req.Head.Msg
-	rsp.Head.Session = req.Head.Session
 
 	jsonHandlers[req.Head.Msg](req, rsp)
 	return jsonToBytes(rsp)
