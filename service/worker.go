@@ -25,7 +25,7 @@ func RunWorker(_name string, _proc string, _processor func([]byte) ([]byte, erro
 
 		rsp, err := _processor(req)
 		if nil != err {
-			rsp = make([]byte, 0)
+			rsp = make([]byte, 1)
 			rsp[0] = 255
 			responder.SendBytes(rsp, 0)
 			continue
