@@ -4,37 +4,34 @@ import (
 	zmq "github.com/pebbe/zmq4"
 )
 
-type _Publisher struct {
+type Publisher struct {
 	msgChan chan string
 	socket  *zmq.Socket
 }
 
-var publishers = make(map[string]*_Publisher)
-
-func RunPublisher(_name string, _proc string) {
+func NewPublisher() (*Publisher, error) {
 	socket, err := zmq.NewSocket(zmq.PUB)
 	if nil != err {
-		panic(err)
+		return nil, err
 	}
-	defer socket.Close()
 
-	publisher := &_Publisher{}
+	publisher := &Publisher{}
 	publisher.socket = socket
-	publisher.socket.Bind(_proc)
 	publisher.msgChan = make(chan string)
-	publishers[_name] = publisher
-
-	for {
-		select {
-		case msg := <-publisher.msgChan:
-			publisher.socket.Send(msg, 0)
-		}
-	}
-
+	return publisher, nil
 }
 
-func Publish(_name string, _msg string) {
-	if publisher, ok := publishers[_name]; !ok {
-		publisher.msgChan <- _msg
+func (this *Publisher) Run(_proc string) {
+	defer this.socket.Close()
+	this.socket.Bind(_proc)
+	for {
+		select {
+		case msg := <-this.msgChan:
+			this.socket.Send(msg, 0)
+		}
 	}
+}
+
+func (this *Publisher) Publish(_msg string) {
+	this.msgChan <- _msg
 }

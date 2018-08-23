@@ -4,27 +4,41 @@ import (
 	zmq "github.com/pebbe/zmq4"
 )
 
-func RunBroker(_name string, _procFrontend string, _procBackend string) {
+type Broker struct {
+	frontend *zmq.Socket
+	backend  *zmq.Socket
+}
+
+func NewBroker() (*Broker, error) {
 	frontend, err := zmq.NewSocket(zmq.ROUTER)
 	if nil != err {
-		panic(err)
+		return nil, err
 	}
-	defer frontend.Close()
 
 	backend, err := zmq.NewSocket(zmq.DEALER)
 	if nil != err {
-		panic(err)
+		frontend.Close()
+		return nil, err
 	}
-	defer backend.Close()
 
-	frontend.Bind(_procFrontend)
-	backend.Bind(_procBackend)
+	broker := &Broker{
+		frontend: frontend,
+		backend:  backend,
+	}
+	return broker, nil
+}
+
+func (this *Broker) Run(_procFrontend string, _procBackend string) {
+	defer this.frontend.Close()
+	defer this.backend.Close()
+
+	this.frontend.Bind(_procFrontend)
+	this.backend.Bind(_procBackend)
 
 	//  Initialize poll set
 	poller := zmq.NewPoller()
-	poller.Add(frontend, zmq.POLLIN)
-	poller.Add(backend, zmq.POLLIN)
-
+	poller.Add(this.frontend, zmq.POLLIN)
+	poller.Add(this.backend, zmq.POLLIN)
 	//  Switch messages between sockets
 	for {
 		sockets, err := poller.Poll(-1)
@@ -33,27 +47,27 @@ func RunBroker(_name string, _procFrontend string, _procBackend string) {
 		}
 		for _, socket := range sockets {
 			switch s := socket.Socket; s {
-			case frontend:
+			case this.frontend:
 				for {
 					data, _ := s.RecvBytes(0)
 					more, _ := s.GetRcvmore()
 
 					if more {
-						backend.SendBytes(data, zmq.SNDMORE)
+						this.backend.SendBytes(data, zmq.SNDMORE)
 					} else {
-						backend.SendBytes(data, 0)
+						this.backend.SendBytes(data, 0)
 						break
 					}
 				}
-			case backend:
+			case this.backend:
 				for {
 					data, _ := s.RecvBytes(0)
 					more, _ := s.GetRcvmore()
 
 					if more {
-						frontend.SendBytes(data, zmq.SNDMORE)
+						this.frontend.SendBytes(data, zmq.SNDMORE)
 					} else {
-						frontend.SendBytes(data, 0)
+						this.frontend.SendBytes(data, 0)
 						break
 					}
 				}

@@ -4,21 +4,27 @@ import (
 	zmq "github.com/pebbe/zmq4"
 )
 
-func RunWorker(_name string, _proc string, _processor func([]byte) ([]byte, error)) {
-	if nil == _processor {
-		panic("need processor")
-	}
+type Worker struct {
+	socket *zmq.Socket
+}
 
-	responder, err := zmq.NewSocket(zmq.REP)
+func NewWorker() (*Worker, error) {
+	socket, err := zmq.NewSocket(zmq.REP)
 	if nil != err {
 		panic(err)
 	}
-	defer responder.Close()
-	responder.Connect(_proc)
+	worker := &Worker{
+		socket: socket,
+	}
+	return worker, nil
+}
+func (this *Worker) Run(_proc string, _processor func([]byte) ([]byte, error)) {
+	defer this.socket.Close()
+	this.socket.Connect(_proc)
 
 	for {
 		//  Wait for next request from client
-		req, err := responder.RecvBytes(0)
+		req, err := this.socket.RecvBytes(0)
 		if nil != err {
 			continue
 		}
@@ -27,9 +33,9 @@ func RunWorker(_name string, _proc string, _processor func([]byte) ([]byte, erro
 		if nil != err {
 			rsp = make([]byte, 1)
 			rsp[0] = 255
-			responder.SendBytes(rsp, 0)
+			this.socket.SendBytes(rsp, 0)
 			continue
 		}
-		responder.SendBytes(rsp, 0)
+		this.socket.SendBytes(rsp, 0)
 	}
 }
