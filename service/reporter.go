@@ -5,6 +5,8 @@ import (
 )
 
 type Reporter struct {
+	OnIncoming func(*net.UDPAddr)
+
 	conn    *net.UDPConn
 	inChan  chan *Report
 	outChan chan *Report
@@ -52,6 +54,10 @@ func (this *Reporter) Run(_proc string, _processor func([]byte) ([]byte, error))
 		if err != nil {
 			continue
 		}
+		if nil != this.OnIncoming {
+			this.OnIncoming(addr)
+		}
+
 		if rlen > 0 {
 			data := make([]byte, rlen)
 			copy(data, this.buff[:rlen])
