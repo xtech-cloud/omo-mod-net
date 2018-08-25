@@ -5,7 +5,7 @@ import (
 )
 
 type Reporter struct {
-	conn    *net.UDPConn
+	Conn    *net.UDPConn
 	inChan  chan *Report
 	outChan chan *Report
 	buff    []byte
