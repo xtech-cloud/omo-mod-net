@@ -22,7 +22,7 @@ type Report struct {
 func NewReporter() (*Reporter, error) {
 
 	reporter := &Reporter{
-		conn:    nil,
+		Conn:    nil,
 		inChan:  make(chan *Report),
 		outChan: make(chan *Report),
 		buff:    make([]byte, 1024*1024),
@@ -41,14 +41,14 @@ func (this *Reporter) Run(_proc string, _processor func([]byte, interface{}) ([]
 	if nil != err {
 		panic(err)
 	}
-	this.conn = conn
+	this.Conn = conn
 	//异步处理
 	go this.asyncProcess()
 	//异步回复
 	go this.asyncReply()
 
 	for {
-		rlen, addr, err := this.conn.ReadFromUDP(this.buff)
+		rlen, addr, err := this.Conn.ReadFromUDP(this.buff)
 		if err != nil {
 			continue
 		}
@@ -56,7 +56,7 @@ func (this *Reporter) Run(_proc string, _processor func([]byte, interface{}) ([]
 			data := make([]byte, rlen)
 			copy(data, this.buff[:rlen])
 			report := &Report{
-				Conn:      this.conn,
+				Conn:      this.Conn,
 				Addr:      addr,
 				Content:   data,
 				Comment:   make([]byte, 0),
