@@ -6,9 +6,17 @@ import (
 	"github.com/xtech-cloud/omo-mod-net/protocol"
 )
 
-var jsonHandlers = make(map[string]func(*protocol.Request, *protocol.Response), 0)
+type Processor struct {
+	jsonHandlers map[string]func(*protocol.Request, *protocol.Response, interface{})
+}
 
-func ProcessJson(_bytes []byte) ([]byte, error) {
+func NewProcessor() *Processor {
+	return &Processor{
+		jsonHandlers: make(map[string]func(*protocol.Request, *protocol.Response, interface{}), 0),
+	}
+}
+
+func (this *Processor) ProcessJson(_bytes []byte, _sender interface{}) ([]byte, error) {
 	req := &protocol.Request{}
 	rsp := &protocol.Response{}
 
@@ -23,19 +31,19 @@ func ProcessJson(_bytes []byte) ([]byte, error) {
 	rsp.Head.Msg = req.Head.Msg
 	rsp.Head.Session = req.Head.Session
 
-	if _, ok := jsonHandlers[req.Head.Msg]; !ok {
+	if _, ok := this.jsonHandlers[req.Head.Msg]; !ok {
 		rsp.Head.ErrCode = -1
 		rsp.Head.ErrString = "handler not found"
 		rsp.Body = &protocol.EmptyBlock{}
 		return jsonToBytes(rsp)
 	}
 
-	jsonHandlers[req.Head.Msg](req, rsp)
+	this.jsonHandlers[req.Head.Msg](req, rsp, _sender)
 	return jsonToBytes(rsp)
 }
 
-func BindJsonHandler(_msg string, _handler func(*protocol.Request, *protocol.Response)) {
-	jsonHandlers[_msg] = _handler
+func (this *Processor) BindJsonHandler(_msg string, _handler func(*protocol.Request, *protocol.Response, interface{})) {
+	this.jsonHandlers[_msg] = _handler
 }
 
 func jsonToBytes(_json *protocol.Response) ([]byte, error) {

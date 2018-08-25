@@ -18,7 +18,7 @@ func NewWorker() (*Worker, error) {
 	}
 	return worker, nil
 }
-func (this *Worker) Run(_proc string, _processor func([]byte) ([]byte, error)) {
+func (this *Worker) Run(_proc string, _processor func([]byte, interface{}) ([]byte, error)) {
 	defer this.socket.Close()
 	this.socket.Connect(_proc)
 
@@ -29,7 +29,7 @@ func (this *Worker) Run(_proc string, _processor func([]byte) ([]byte, error)) {
 			continue
 		}
 
-		rsp, err := _processor(req)
+		rsp, err := _processor(req, nil)
 		if nil != err {
 			rsp = make([]byte, 1)
 			rsp[0] = 255

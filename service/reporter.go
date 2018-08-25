@@ -5,8 +5,6 @@ import (
 )
 
 type Reporter struct {
-	OnIncoming func(*net.UDPAddr)
-
 	conn    *net.UDPConn
 	inChan  chan *Report
 	outChan chan *Report
@@ -16,7 +14,7 @@ type Reporter struct {
 type Report struct {
 	Conn      *net.UDPConn
 	Addr      *net.UDPAddr
-	Processor func([]byte) ([]byte, error)
+	Processor func([]byte, interface{}) ([]byte, error)
 	Content   []byte //接收的内容
 	Comment   []byte //发送的内容
 }
@@ -32,7 +30,7 @@ func NewReporter() (*Reporter, error) {
 	return reporter, nil
 }
 
-func (this *Reporter) Run(_proc string, _processor func([]byte) ([]byte, error)) {
+func (this *Reporter) Run(_proc string, _processor func([]byte, interface{}) ([]byte, error)) {
 	udp_addr, err := net.ResolveUDPAddr("udp", _proc)
 
 	if nil != err {
@@ -54,10 +52,6 @@ func (this *Reporter) Run(_proc string, _processor func([]byte) ([]byte, error))
 		if err != nil {
 			continue
 		}
-		if nil != this.OnIncoming {
-			this.OnIncoming(addr)
-		}
-
 		if rlen > 0 {
 			data := make([]byte, rlen)
 			copy(data, this.buff[:rlen])
@@ -79,7 +73,7 @@ func (this *Reporter) asyncProcess() {
 		select {
 		//从读取管道中取出一个报告用于处理
 		case report := <-this.inChan:
-			comment, err := report.Processor(report.Content)
+			comment, err := report.Processor(report.Content, report.Addr)
 			//出现异常时，丢弃报告，不回复
 			if nil == err {
 				//将处理完的报告放入发送管道
